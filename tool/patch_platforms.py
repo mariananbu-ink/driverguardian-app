@@ -199,10 +199,29 @@ def patch_podfile():
         print('patched', p)
 
 
+def patch_lint():
+    """Release builds run Android lint ("lintVital") on every plugin. Newer lint versions can crash on plugin
+    sources (e.g. image_picker: NoSuchMethodError List.removeLast) — that check is not needed to build the app,
+    so it is switched off for all modules. Code quality is still checked by flutter analyze."""
+    marker = 'DriverGuardian: skip lintVital'
+    for name, block in (
+        ('build.gradle.kts', '\n// ' + marker + '\nsubprojects {\n    tasks.configureEach {\n        if (name.startsWith("lintVital")) enabled = false\n    }\n}\n'),
+        ('build.gradle', '\n// ' + marker + '\nsubprojects {\n    tasks.configureEach { t ->\n        if (t.name.startsWith("lintVital")) t.enabled = false\n    }\n}\n'),
+    ):
+        p = os.path.join(A, name)
+        if os.path.exists(p):
+            s = read(p)
+            if marker not in s:
+                write(p, s.rstrip('\n') + '\n' + block)
+            print('patched', p, '(lint)')
+            return
+
+
 if __name__ == '__main__':
     patch_manifest()
     patch_gradle()
     patch_gradle_properties()
+    patch_lint()
     patch_signing()
     patch_ios()
     patch_podfile()
