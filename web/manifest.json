@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "DriverGuardian",
+  "short_name": "DriverGuardian",
+  "description": "Live school bus tracking, attendance, fees and alerts for parents, drivers and schools.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1033",
+  "theme_color": "#0B1033",
+  "categories": ["education", "travel", "utilities"],
+  "prefer_related_applications": false,
+  "related_applications": [{ "platform": "webapp", "url": "manifest.json" }],
+  "icons": [
+    { "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
