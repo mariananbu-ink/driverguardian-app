@@ -1,0 +1,69 @@
+# DriverGuardian — create the Play Store upload key ON GITHUB (no Java needed on your PC).
+# Run once: Actions → Create upload key → Run workflow → fill in the boxes.
+# Download the artifact "upload-key" (zip): it holds upload-keystore.jks, keystore-base64.txt and KEY-DETAILS.txt.
+# Then add the four secrets (see PLAY-STORE-GUIDE) and DELETE this run (… → Delete workflow run) so the key is
+# not left on GitHub. Keep the .jks and its password safe — every future Play Store update needs the same key.
+# Developed & Powered by Marian Anbu Juwan
+name: Create upload key
+
+on:
+  workflow_dispatch:
+    inputs:
+      password:
+        description: 'Key password (at least 8 characters, letters + numbers, no spaces). WRITE IT DOWN.'
+        required: true
+      name:
+        description: 'Your name or company (shown inside the certificate)'
+        required: true
+        default: 'Marian Technologies'
+      city:
+        description: 'City'
+        required: true
+        default: 'Bengaluru'
+
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Create the key
+        env:
+          PW: ${{ inputs.password }}
+          NM: ${{ inputs.name }}
+          CT: ${{ inputs.city }}
+        run: |
+          echo "::add-mask::$PW"
+          if [ ${#PW} -lt 8 ]; then echo "::error::Password must be at least 8 characters"; exit 1; fi
+          case "$PW" in *" "*|*,*|*\"*) echo "::error::Password must not contain spaces, commas or quotes"; exit 1;; esac
+          mkdir -p key
+          keytool -genkeypair -v -keystore key/upload-keystore.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$PW" -keypass "$PW" -dname "CN=$NM, O=$NM, L=$CT, ST=Karnataka, C=IN"
+          base64 -w0 key/upload-keystore.jks > key/keystore-base64.txt
+          keytool -list -v -keystore key/upload-keystore.jks -storepass "$PW" | grep -E "Alias|SHA1|SHA256|Valid" > key/fingerprints.txt
+          {
+            echo "DriverGuardian — Play Store upload key"
+            echo "Created: $(date -u '+%d %b %Y %H:%M UTC')"
+            echo
+            echo "GitHub → Settings → Secrets and variables → Actions → Secrets → New repository secret:"
+            echo "  ANDROID_KEYSTORE_BASE64   = whole content of keystore-base64.txt (one long line)"
+            echo "  ANDROID_KEYSTORE_PASSWORD = the password you typed"
+            echo "  ANDROID_KEY_ALIAS         = upload"
+            echo "  ANDROID_KEY_PASSWORD      = the same password"
+            echo
+            echo "Keep upload-keystore.jks + the password in two safe places (e.g. Google Drive + pen drive)."
+            echo "Lost key? Play Console → Setup → App signing → Request upload key reset."
+            echo
+            cat key/fingerprints.txt
+            echo
+            echo "Developed & Powered by Marian Anbu Juwan"
+          } > key/KEY-DETAILS.txt
+          ls -la key
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upload-key
+          path: key/*
+          retention-days: 1
